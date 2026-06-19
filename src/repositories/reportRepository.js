@@ -152,8 +152,12 @@ const getOverdueLoans = async () => {
 | - Installment schedule
 |--------------------------------------------------------------------------
 */
-const getCustomerStatement = async (contractId) => {
-  const [loanInfo] = await pool.query(
+const getCustomerStatement = async (search) => {
+  // Prepare the search term for the LIKE clauses
+  const searchParam = `%${search}%`;
+
+  // Fetch the loan information first
+  const [loanRows] = await pool.query(
     `
     SELECT
       lc.id,
@@ -178,41 +182,68 @@ const getCustomerStatement = async (contractId) => {
     INNER JOIN loan_products lp
       ON lc.product_id = lp.id
 
-    WHERE lc.id = ?
+    WHERE lc.id LIKE ?
+      OR lc.contract_no LIKE ?
+      OR c.full_name LIKE ?
+    LIMIT 1
     `,
-    [contractId],
+    [searchParam, searchParam, searchParam],
   );
 
-  const [payments] = await pool.query(
-    `
-    SELECT
-      receipt_no,
-      amount_paid,
-      payment_date
-    FROM payments
-    WHERE contract_id = ?
-    ORDER BY payment_date ASC
-    `,
-    [contractId],
-  );
+  const loanInfo = loanRows[0];
 
-  const [schedules] = await pool.query(
-    `
-    SELECT
-      installment_no,
-      due_date,
-      amount_due,
-      amount_paid,
-      status
-    FROM payment_schedules
-    WHERE contract_id = ?
-    ORDER BY installment_no
-    `,
-    [contractId],
-  );
+  // Guard clause: If no loan matches the search, return early
+  if (!loanInfo) {
+    return {
+      loanInfo: null,
+      payments: [],
+      schedules: [],
+    };
+  }
+
+  // 4. Use the concrete loan ID to fetch related payments and schedules parallelly
+  const [paymentsPromise, schedulesPromise] = [
+    pool.query(
+      ` 
+      SELECT 
+        receipt_no, 
+        amount_paid, 
+        payment_date
+
+      FROM payments
+
+      WHERE contract_id = ?
+
+      ORDER BY payment_date ASC
+      `,
+      [loanInfo.id],
+    ),
+    pool.query(
+      `
+      SELECT 
+        installment_no, 
+        due_date, 
+        amount_due, 
+        amount_paid, 
+        status
+      
+      FROM payment_schedules
+      
+      WHERE contract_id = ?
+      
+      ORDER BY installment_no ASC
+      `,
+      [loanInfo.id],
+    ),
+  ];
+
+  const [[payments], [schedules]] = await Promise.all([
+    paymentsPromise,
+    schedulesPromise,
+  ]);
 
   return {
-    loanInfo: loanInfo[0],
+    loanInfo,
     payments,
     schedules,
   };
