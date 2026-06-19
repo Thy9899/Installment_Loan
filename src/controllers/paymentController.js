@@ -38,45 +38,31 @@ const paymentService = require("../services/paymentService");
 */
 const pay = async (req, res) => {
   try {
-    /**
-     * -------------------------------------------------------------
-     * Retrieve Logged-In Staff ID
-     * -------------------------------------------------------------
-     * Used for audit trail and payment tracking.
-     */
     const staffId = req.user ? req.user.id : null;
 
-    /**
-     * -------------------------------------------------------------
-     * Process Payment Transaction
-     * -------------------------------------------------------------
-     * Sends payment data to service layer for processing.
-     */
-    const result = await paymentService.payInstallment({
-      ...req.body,
-      received_by: staffId,
-    });
+    // Routing Logic split based on whether a 'is_payoff' flag is passed in the request body
+    let result;
+    if (req.body.is_payoff === true) {
+      result = await paymentService.payOffContract({
+        contract_id: req.body.contract_id,
+        payment_method: req.body.payment_method,
+        received_by: staffId,
+      });
+    } else {
+      result = await paymentService.payInstallment({
+        ...req.body,
+        received_by: staffId,
+      });
+    }
 
-    /**
-     * -------------------------------------------------------------
-     * Return Payment Confirmation
-     * -------------------------------------------------------------
-     */
     res.json({
       success: true,
-      message: "Payment processed successfully",
+      message: req.body.is_payoff
+        ? "Contract fully paid off successfully"
+        : "Payment processed successfully",
       data: result,
     });
   } catch (error) {
-    /**
-     * -------------------------------------------------------------
-     * Payment Processing Error
-     * -------------------------------------------------------------
-     * Examples:
-     * - Invalid installment ID
-     * - Overpayment detected
-     * - Contract already closed
-     */
     res.status(400).json({
       success: false,
       message: error.message,
@@ -103,12 +89,12 @@ const getHistory = async (req, res) => {
     /**
      * Extract contract ID from request parameters
      */
-    const { contractId } = req.params;
+    const { search } = req.params;
 
     /**
      * Retrieve payment history
      */
-    const data = await paymentService.getPaymentHistoryByContract(contractId);
+    const data = await paymentService.getPaymentHistoryByContract(search);
 
     res.json({
       success: true,

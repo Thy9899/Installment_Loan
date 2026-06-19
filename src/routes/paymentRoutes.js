@@ -40,7 +40,7 @@ router.post(
 
 // Review historically generated settlement rows
 router.get(
-  "/history/:contractId",
+  "/history/:search",
   authorizeRoles("admin", "manager", "loan_officer", "cashier"),
   getHistory,
 );
