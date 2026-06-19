@@ -1,9 +1,9 @@
 /**
  * ==========================================================================
  * System      : Installment & Loan Management System
- * Module      : Loan Product Management
- * File        : loanProductService.js
- * Description : Contains business logic for loan products
+ * Module      : Report Management
+ * File        : reportRepository.js
+ * Description : Data Access Repository dealing directly with MySQL queries
  * Author      : Chanthy Kean
  * Version     : 1.0.0
  * Created     : 2026
@@ -30,20 +30,27 @@ const getLoanPortfolio = async () => {
     SELECT
       lc.id,
       lc.contract_no,
+      
       c.customer_code,
       c.full_name,
+      
       lp.product_name,
+      
       lc.principal_amount,
       lc.total_interest,
       lc.total_amount,
       lc.remaining_balance,
       lc.status,
       lc.start_date
+    
     FROM loan_contracts lc
+    
     INNER JOIN customers c
       ON lc.customer_id = c.id
+    
     INNER JOIN loan_products lp
       ON lc.product_id = lp.id
+    
     ORDER BY lc.id DESC
   `);
 
@@ -73,12 +80,17 @@ const getDailyCollection = async (businessDate) => {
       lc.contract_no,
       p.amount_paid,
       p.payment_date
+    
     FROM payments p
+
     INNER JOIN loan_contracts lc
       ON p.contract_id = lc.id
+    
     INNER JOIN customers c
       ON lc.customer_id = c.id
+    
     WHERE DATE(p.payment_date) = ?
+    
     ORDER BY p.payment_date DESC
     `,
     [businessDate],
@@ -201,7 +213,7 @@ const getCustomerStatement = async (search) => {
     };
   }
 
-  // 4. Use the concrete loan ID to fetch related payments and schedules parallelly
+  // Use the concrete loan ID to fetch related payments and schedules parallelly
   const [paymentsPromise, schedulesPromise] = [
     pool.query(
       ` 

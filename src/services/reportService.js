@@ -1,9 +1,9 @@
 /**
  * ==========================================================================
  * System      : Installment & Loan Management System
- * Module      : Loan Product Management
- * File        : loanProductService.js
- * Description : Contains business logic for loan products
+ * Module      : Report Management
+ * File        : reportService.js
+ * Description : Business logic coordination rules processing for core data sets
  * Author      : Chanthy Kean
  * Version     : 1.0.0
  * Created     : 2026
@@ -24,8 +24,8 @@ const getOverdueLoans = async () => {
   return repo.getOverdueLoans();
 };
 
-const getCustomerStatement = async (contractId) => {
-  return repo.getCustomerStatement(contractId);
+const getCustomerStatement = async (searchParam) => {
+  return repo.getCustomerStatement(searchParam);
 };
 
 const getOutstandingBalances = async () => {

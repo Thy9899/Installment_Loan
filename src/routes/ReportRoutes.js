@@ -11,10 +11,8 @@
  */
 
 const express = require("express");
-
 const router = express.Router();
 const verifyToken = require("../middleware/authMiddleware");
-const authorizeRoles = require("../middleware/roleMiddleware");
 
 const {
   getLoanPortfolio,
@@ -24,6 +22,7 @@ const {
   getOutstandingBalances,
 } = require("../controllers/reportController");
 
+// Secure all reporting endpoints behind authentication token validations
 router.use(verifyToken);
 
 router.get("/loan-portfolio", getLoanPortfolio);
@@ -32,7 +31,7 @@ router.get("/daily-collection", getDailyCollection);
 
 router.get("/overdue-loans", getOverdueLoans);
 
-router.get("/customer-statement/:contractId", getCustomerStatement);
+router.get("/customer-statement", getCustomerStatement);
 
 router.get("/outstanding-balances", getOutstandingBalances);
 

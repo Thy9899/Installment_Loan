@@ -1,9 +1,9 @@
 /**
  * ==========================================================================
  * System      : Installment & Loan Management System
- * Module      : Loan Product Management
- * File        : loanProductService.js
- * Description : Contains business logic for loan products
+ * Module      : Report Management
+ * File        : reportController.js
+ * Description : Traffic controllers mapping HTTP interfaces to report logic
  * Author      : Chanthy Kean
  * Version     : 1.0.0
  * Created     : 2026
@@ -59,11 +59,10 @@ const getLoanPortfolio = async (req, res) => {
 const getDailyCollection = async (req, res) => {
   try {
     const date = req.query.date || new Date().toISOString().split("T")[0];
-
     const data = await reportService.getDailyCollection(date);
 
     const totalAmount = data.reduce(
-      (sum, item) => sum + Number(item.amount),
+      (sum, item) => sum + Number(item.amount_paid || 0),
       0,
     );
 
@@ -74,10 +73,7 @@ const getDailyCollection = async (req, res) => {
       data,
     });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
@@ -99,7 +95,7 @@ const getOverdueLoans = async (req, res) => {
     const data = await reportService.getOverdueLoans();
 
     const totalOverdueAmount = data.reduce(
-      (sum, row) => sum + Number(row.amount_due),
+      (sum, row) => sum + Number(row.amount_due || 0),
       0,
     );
 
@@ -132,19 +128,19 @@ const getOverdueLoans = async (req, res) => {
 */
 const getCustomerStatement = async (req, res) => {
   try {
-    const data = await reportService.getCustomerStatement(
-      req.params.contractId,
-    );
+    // Reads input parameter cleanly from query strings (?search=ABC)
+    const { search } = req.query;
+    if (!search) {
+      return res.status(400).json({
+        success: false,
+        message: "Search criteria parameter is required.",
+      });
+    }
 
-    res.json({
-      success: true,
-      data,
-    });
+    const data = await reportService.getCustomerStatement(search);
+    res.json({ success: true, data });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
@@ -165,7 +161,7 @@ const getOutstandingBalances = async (req, res) => {
     const data = await reportService.getOutstandingBalances();
 
     const totalOutstanding = data.reduce(
-      (sum, row) => sum + Number(row.remaining_balance),
+      (sum, row) => sum + Number(row.remaining_balance || 0),
       0,
     );
 
